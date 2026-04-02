@@ -4,7 +4,7 @@
 
 A modern, interactive finance dashboard for tracking balances, income, expenses, and transactions. The app emphasizes **clear architecture**, **centralized state**, and **predictable data flow** from a single store through derived helpers into the UI.
 
-**Live demo:** *[Add your Vercel / Netlify URL when deployed]*
+**Live demo:** https://zorvyn-frontend-assignment-flax.vercel.app/
 
 ---
 
