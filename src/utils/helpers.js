@@ -16,7 +16,7 @@ export const calculateSummary = (transactions) => {
   };
 };
 
-// Groups expenses by category for donut chart rendering.
+// Groups expenses by category for donut chart + insights (spending only).
 export const getCategoryData = (transactions) => {
   const expenses = transactions.filter((tx) => tx.type === 'expense');
   const categoryMap = expenses.reduce((acc, tx) => {
@@ -24,10 +24,36 @@ export const getCategoryData = (transactions) => {
     return acc;
   }, {});
 
-  return Object.keys(categoryMap).map((key) => ({
+  const rows = Object.keys(categoryMap).map((key) => ({
     name: key,
     value: categoryMap[key],
   }));
+
+  // Same order as insight: largest spend first (stable tie-break by name).
+  return rows.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+};
+
+// Top spending category (must match donut totals; ties break alphabetically).
+export const getHighestSpendingCategory = (transactions) => {
+  const rows = getCategoryData(transactions);
+  if (rows.length === 0) return null;
+
+  const totalExpenses = transactions
+    .filter((tx) => tx.type === 'expense')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const top = rows[0];
+  const percent =
+    totalExpenses > 0
+      ? Math.round((top.value / totalExpenses) * 1000) / 10
+      : 0;
+
+  return {
+    name: top.name,
+    amount: top.value,
+    percentOfTotalExpenses: percent,
+    totalExpenses,
+  };
 };
 
 // Returns daily income/expense trend data sorted by date.

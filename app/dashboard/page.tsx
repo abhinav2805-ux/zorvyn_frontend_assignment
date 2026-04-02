@@ -7,12 +7,12 @@ import { InsightCard } from '@/components/insight-card';
 import { BalanceChart, SpendingChart } from '@/components/charts';
 import { TransactionsTable } from '@/components/transactions-table';
 import { useFinanceStore } from '@/src/store/useFinanceStore';
-import { calculateSummary, getCategoryData } from '@/src/utils/helpers';
+import { calculateSummary, getHighestSpendingCategory } from '@/src/utils/helpers';
 
 export default function DashboardPage() {
   const transactions = useFinanceStore((state) => state.transactions);
   const { income, expenses, balance } = calculateSummary(transactions);
-  const topCategory = getCategoryData(transactions).sort((a, b) => b.value - a.value)[0];
+  const topSpending = getHighestSpendingCategory(transactions);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -63,9 +63,14 @@ export default function DashboardPage() {
                 <InsightCard
                   title="Highest Spending Category"
                   value={
-                    topCategory
-                      ? `${topCategory.name} ($${topCategory.value.toLocaleString()})`
-                      : 'N/A'
+                    topSpending
+                      ? `${topSpending.name} ($${topSpending.amount.toLocaleString()})`
+                      : 'No expense data'
+                  }
+                  subtitle={
+                    topSpending
+                      ? `${topSpending.percentOfTotalExpenses}% of total expenses ($${topSpending.totalExpenses.toLocaleString()})`
+                      : undefined
                   }
                 />
               </div>

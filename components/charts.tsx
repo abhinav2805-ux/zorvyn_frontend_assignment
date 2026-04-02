@@ -78,12 +78,13 @@ export function SpendingChart() {
           <PieChart>
             <Pie
               data={pieData}
+              dataKey="value"
+              nameKey="name"
               cx="50%"
               cy="50%"
               innerRadius={60}
               outerRadius={100}
               paddingAngle={5}
-              dataKey="value"
             >
               {pieData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

@@ -5,6 +5,7 @@ import { useFinanceStore } from '@/src/store/useFinanceStore';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -102,6 +103,11 @@ export function TransactionModal({
           <DialogTitle>
             {existingTx ? 'Edit Transaction' : 'Add Transaction'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {existingTx
+              ? 'Update the fields below and save to apply changes to this transaction.'
+              : 'Enter transaction details below and save to add it to your list.'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
