@@ -1,0 +1,78 @@
+Here is a 7-phase roadmap to build your Finance Dashboard from scratch to deployment.
+
+Phase 1: Foundation & Architecture (Day 1)
+Goal: Get the project running and establish the folder structure.
+
+Initialize Project: Scaffold the app using Vite (React).
+
+Install Dependencies: Add Tailwind CSS, Zustand (state), Recharts (charts), Lucide React (icons), and Framer Motion (animations).
+
+Folder Structure: Set up your src/ directory with folders for components, store, utils, and assets.
+
+Routing (Optional but recommended): Set up a simple router (like react-router-dom) if you want separate pages for the Dashboard and the Transactions list, or keep it as a single-page view with conditional rendering.
+
+Phase 2: State, Data & Mock API (Day 1-2)
+Goal: Build the engine that powers the dashboard. (Hits Brownie Points: Data Persistence, Mock API)
+
+Create Mock Data: Write a utils/mockData.js file with 20-30 realistic transaction objects (include dates, amounts, categories like "Food" or "Housing", and types: "Income" / "Expense").
+
+Setup Zustand Store: Create useFinanceStore.js. Add your mock data as the initial state for transactions.
+
+Add Persistence: Wrap your Zustand store in the persist middleware so data saves to localStorage.
+
+Simulate API Loading: Create a mock fetch function with a setTimeout (e.g., 1.5 seconds) to simulate network latency when the app first loads.
+
+Phase 3: Core Layout & Theming (Day 2)
+Goal: Build the skeleton of the UI. (Hits Brownie Point: Dark Mode)
+
+Main Layout: Build a responsive shell with a Sidebar (navigation) and a Top Header.
+
+Dark Mode Toggle: Configure Tailwind for dark mode. Add a toggle button in the Header that updates a theme state in Zustand and applies the .dark class to the HTML body.
+
+Mobile Responsiveness: Ensure the Sidebar collapses into a hamburger menu on smaller screens.
+
+Phase 4: The Dashboard & Visualizations (Day 3)
+Goal: Make the data look beautiful and insightful.
+
+Summary Cards: Build cards for "Total Balance", "Total Income", and "Total Expenses". Write the utility functions to calculate these from your Zustand store.
+
+Time-Based Chart: Implement a Line or Area chart using Recharts to show balance or expenses over time.
+
+Categorical Chart: Implement a Donut chart using Recharts to show the spending breakdown by category.
+
+Insights Section: Add a small card that dynamically calculates and displays the "Highest Spending Category."
+
+Phase 5: Transactions Table & Features (Day 4)
+Goal: Build a highly interactive data grid. (Hits Brownie Point: Export CSV)
+
+Basic Table: Render the transactions list with columns for Date, Description, Category, Type, and Amount.
+
+Search & Filtering: Add a search input (by description) and dropdowns to filter by Category or Type.
+
+Sorting: Make the Date and Amount column headers clickable to sort the data ascending/descending.
+
+Export to CSV: Add a button that takes the currently filtered list of transactions, formats it into a CSV string, and triggers a file download.
+
+Phase 6: Role-Based Access Control (RBAC) (Day 5)
+Goal: Implement the admin vs. viewer logic.
+
+Role Toggle: Add a dropdown in the Header to switch between "Admin" and "Viewer" roles. Store this role in Zustand.
+
+Viewer Restrictions: Ensure the Viewer can only use filters, sorting, and view charts.
+
+Admin Capabilities: * Show an "+ Add Transaction" button.
+
+Add "Edit" and "Delete" action buttons to each row in the table.
+
+Forms/Modals: Build the modal interface for adding and editing transactions. Hook these up to update the Zustand store (which will automatically update your charts and persist to local storage).
+
+Phase 7: Polish, Animation & Submission (Day 6)
+Goal: Make it feel premium and write a killer README. (Hits Brownie Point: Animations)
+
+Animations: Use Framer Motion to add simple fade-ins when switching views or rendering charts, and subtle hover effects on buttons.
+
+Edge Cases: Test the app with zero transactions. Design a nice "No data available" empty state.
+
+Deployment: Push the code to GitHub and deploy the live site to Vercel or Netlify.
+
+The README: Write a highly detailed README. Include setup instructions, a list of features (highlighting the optional ones you completed), and a brief explanation of your architectural choices.
