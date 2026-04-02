@@ -18,8 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ChevronDown, Download, Plus, MoreHorizontal, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import {
+  ChevronDown,
+  Download,
+  Plus,
+  MoreHorizontal,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowUpDown,
+} from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
 
 interface Transaction {
   id: string;
@@ -30,65 +38,110 @@ interface Transaction {
   amount: number;
 }
 
-type SortField = 'date' | 'amount' | 'description';
-type SortOrder = 'asc' | 'desc';
+type SortKey = 'date' | 'amount';
+
+function escapeCsvField(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
 
 export function TransactionsTable() {
   const { role } = useDashboard();
   const transactions = useFinanceStore((state) => state.transactions) as Transaction[];
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  const filteredAndSorted = useMemo(() => {
-    let filtered = transactions.filter(tx => {
-      const matchesSearch =
-        tx.description.toLowerCase().includes(search.toLowerCase()) ||
-        tx.category.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || tx.category === categoryFilter;
-      const matchesType = typeFilter === 'all' || tx.type === typeFilter;
-      return matchesSearch && matchesCategory && matchesType;
-    });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [sortConfig, setSortConfig] = useState<{
+    key: SortKey;
+    direction: 'asc' | 'desc';
+  }>({ key: 'date', direction: 'desc' });
 
-    return filtered.sort((a, b) => {
-      let aVal: string | number = a[sortField] || '';
-      let bVal: string | number = b[sortField] || '';
+  const filteredTransactions = useMemo(() => {
+    let result = [...transactions];
 
-      if (typeof aVal === 'string') {
-        aVal = aVal.toLowerCase();
-        bVal = (bVal as string).toLowerCase();
-      }
-
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
-    });
-  }, [transactions, search, categoryFilter, typeFilter, sortField, sortOrder]);
-
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      result = result.filter((tx) =>
+        tx.description.toLowerCase().includes(q)
+      );
     }
-  };
 
-  const categories = ['all', ...new Set(transactions.map(tx => tx.category))];
+    if (categoryFilter !== 'All') {
+      result = result.filter((tx) => tx.category === categoryFilter);
+    }
+
+    if (typeFilter !== 'All') {
+      result = result.filter((tx) => tx.type === typeFilter);
+    }
+
+    result.sort((a, b) => {
+      if (sortConfig.key === 'date') {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      if (sortConfig.key === 'amount') {
+        return sortConfig.direction === 'asc'
+          ? a.amount - b.amount
+          : b.amount - a.amount;
+      }
+      return 0;
+    });
+
+    return result;
+  }, [transactions, searchTerm, categoryFilter, typeFilter, sortConfig]);
+
+  const handleSort = useCallback(
+    (key: SortKey) => {
+      setSortConfig((prev) => {
+        if (prev.key === key && prev.direction === 'asc') {
+          return { key, direction: 'desc' };
+        }
+        return { key, direction: 'asc' };
+      });
+    },
+    []
+  );
+
+  const handleExportCSV = useCallback(() => {
+    if (filteredTransactions.length === 0) return;
+
+    const header = 'Date,Description,Category,Type,Amount';
+    const rows = filteredTransactions.map((tx) => {
+      const date = escapeCsvField(tx.date);
+      const desc = escapeCsvField(tx.description);
+      const cat = escapeCsvField(tx.category);
+      const typ = escapeCsvField(tx.type);
+      return `${date},${desc},${cat},${typ},${tx.amount}`;
+    });
+    const csvContent = [header, ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'transactions_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [filteredTransactions]);
+
+  const categories = useMemo(
+    () => ['All', ...Array.from(new Set(transactions.map((tx) => tx.category))).sort()],
+    [transactions]
+  );
 
   return (
     <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           placeholder="Search transactions..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="min-w-[200px] flex-1"
         />
 
         <DropdownMenu>
@@ -98,13 +151,13 @@ export function TransactionsTable() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <DropdownMenuItem
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
                 className={categoryFilter === cat ? 'bg-muted' : ''}
               >
-                {cat === 'all' ? 'All Categories' : cat}
+                {cat === 'All' ? 'All Categories' : cat}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -118,8 +171,8 @@ export function TransactionsTable() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => setTypeFilter('all')}
-              className={typeFilter === 'all' ? 'bg-muted' : ''}
+              onClick={() => setTypeFilter('All')}
+              className={typeFilter === 'All' ? 'bg-muted' : ''}
             >
               All Types
             </DropdownMenuItem>
@@ -138,7 +191,13 @@ export function TransactionsTable() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={handleExportCSV}
+          disabled={filteredTransactions.length === 0}
+        >
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
@@ -151,99 +210,122 @@ export function TransactionsTable() {
         )}
       </div>
 
-      {/* Table */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
                 <TableHead
-                  onClick={() => toggleSort('date')}
-                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => handleSort('date')}
+                  className="cursor-pointer select-none hover:bg-muted"
                 >
-                  Date
-                  {sortField === 'date' && (
-                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                  )}
+                  <span className="inline-flex items-center gap-1">
+                    Date
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    {sortConfig.key === 'date' && (
+                      <span className="text-xs">
+                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </span>
                 </TableHead>
-                <TableHead
-                  onClick={() => toggleSort('description')}
-                  className="cursor-pointer hover:bg-muted"
-                >
-                  Description
-                  {sortField === 'description' && (
-                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                  )}
-                </TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead
-                  onClick={() => toggleSort('amount')}
-                  className="cursor-pointer text-right hover:bg-muted"
+                  onClick={() => handleSort('amount')}
+                  className="cursor-pointer select-none text-right hover:bg-muted"
                 >
-                  Amount
-                  {sortField === 'amount' && (
-                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                  )}
+                  <span className="inline-flex w-full items-center justify-end gap-1">
+                    Amount
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    {sortConfig.key === 'amount' && (
+                      <span className="text-xs">
+                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </span>
                 </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSorted.map(tx => (
-                <TableRow key={tx.id} className="border-b border-border hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {new Date(tx.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </TableCell>
-                  <TableCell>{tx.description}</TableCell>
-                  <TableCell>{tx.category}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                        tx.type === 'income'
-                          ? 'bg-success/10 text-success'
-                          : 'bg-destructive/10 text-destructive'
-                      }`}
-                    >
-                      {tx.type === 'income' ? (
-                        <ArrowDownLeft className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpRight className="h-3 w-3" />
-                      )}
-                      {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="rounded-lg p-2 hover:bg-muted">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {role === 'Admin' && (
-                          <>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {role === 'Viewer' && (
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {filteredTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="py-12 text-center text-muted-foreground"
+                  >
+                    No transactions found matching your filters.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredTransactions.map((tx) => (
+                  <TableRow
+                    key={tx.id}
+                    className="border-b border-border hover:bg-muted/50"
+                  >
+                    <TableCell className="font-medium">
+                      {new Date(tx.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell>{tx.description}</TableCell>
+                    <TableCell>{tx.category}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                          tx.type === 'income'
+                            ? 'bg-success/10 text-success'
+                            : 'bg-destructive/10 text-destructive'
+                        }`}
+                      >
+                        {tx.type === 'income' ? (
+                          <ArrowDownLeft className="h-3 w-3" />
+                        ) : (
+                          <ArrowUpRight className="h-3 w-3" />
+                        )}
+                        {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {tx.type === 'income' ? '+' : '-'}$
+                      {tx.amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="rounded-lg p-2 hover:bg-muted"
+                            aria-label="Row actions"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {role === 'Admin' && (
+                            <>
+                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {role === 'Viewer' && (
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
