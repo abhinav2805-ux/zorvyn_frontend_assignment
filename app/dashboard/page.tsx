@@ -1,11 +1,19 @@
+'use client';
+
 import { Header } from '@/components/header';
 import { Sidebar } from '@/components/sidebar';
 import { SummaryCard } from '@/components/summary-card';
 import { InsightCard } from '@/components/insight-card';
 import { BalanceChart, SpendingChart } from '@/components/charts';
 import { TransactionsTable } from '@/components/transactions-table';
+import { useFinanceStore } from '@/src/store/useFinanceStore';
+import { calculateSummary, getCategoryData } from '@/src/utils/helpers';
 
 export default function DashboardPage() {
+  const transactions = useFinanceStore((state) => state.transactions);
+  const { income, expenses, balance } = calculateSummary(transactions);
+  const topCategory = getCategoryData(transactions).sort((a, b) => b.value - a.value)[0];
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -25,19 +33,19 @@ export default function DashboardPage() {
             <div className="grid gap-6 md:grid-cols-3">
               <SummaryCard
                 title="Total Balance"
-                amount="$28,450.00"
+                amount={`$${balance.toLocaleString()}`}
                 trend={2.5}
                 positive={true}
               />
               <SummaryCard
                 title="Total Income"
-                amount="$15,800.00"
+                amount={`$${income.toLocaleString()}`}
                 trend={5.2}
                 positive={true}
               />
               <SummaryCard
                 title="Total Expenses"
-                amount="$4,234.50"
+                amount={`$${expenses.toLocaleString()}`}
                 trend={-1.8}
                 positive={false}
               />
@@ -54,7 +62,11 @@ export default function DashboardPage() {
               <div className="xl:col-span-2">
                 <InsightCard
                   title="Highest Spending Category"
-                  value="Housing ($1,200)"
+                  value={
+                    topCategory
+                      ? `${topCategory.name} ($${topCategory.value.toLocaleString()})`
+                      : 'N/A'
+                  }
                 />
               </div>
             </div>

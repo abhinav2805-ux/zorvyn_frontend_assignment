@@ -2,6 +2,7 @@
 
 import { useDashboard } from '@/app/dashboard-context';
 import { Input } from '@/components/ui/input';
+import { useFinanceStore } from '@/src/store/useFinanceStore';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,78 +30,12 @@ interface Transaction {
   amount: number;
 }
 
-const transactionsData: Transaction[] = [
-  {
-    id: '1',
-    date: '2024-07-15',
-    description: 'Monthly Salary',
-    category: 'Income',
-    type: 'income',
-    amount: 5000,
-  },
-  {
-    id: '2',
-    date: '2024-07-14',
-    description: 'Apartment Rent',
-    category: 'Housing',
-    type: 'expense',
-    amount: 1200,
-  },
-  {
-    id: '3',
-    date: '2024-07-13',
-    description: 'Grocery Store',
-    category: 'Food',
-    type: 'expense',
-    amount: 124.50,
-  },
-  {
-    id: '4',
-    date: '2024-07-12',
-    description: 'Gas Station',
-    category: 'Transport',
-    type: 'expense',
-    amount: 56.00,
-  },
-  {
-    id: '5',
-    date: '2024-07-11',
-    description: 'Movie Tickets',
-    category: 'Entertainment',
-    type: 'expense',
-    amount: 30.00,
-  },
-  {
-    id: '6',
-    date: '2024-07-10',
-    description: 'Freelance Project',
-    category: 'Income',
-    type: 'income',
-    amount: 800,
-  },
-  {
-    id: '7',
-    date: '2024-07-09',
-    description: 'Coffee Shop',
-    category: 'Food',
-    type: 'expense',
-    amount: 12.50,
-  },
-  {
-    id: '8',
-    date: '2024-07-08',
-    description: 'Utility Bill',
-    category: 'Housing',
-    type: 'expense',
-    amount: 145.00,
-  },
-];
-
 type SortField = 'date' | 'amount' | 'description';
 type SortOrder = 'asc' | 'desc';
 
 export function TransactionsTable() {
   const { role } = useDashboard();
+  const transactions = useFinanceStore((state) => state.transactions) as Transaction[];
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -108,7 +43,7 @@ export function TransactionsTable() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const filteredAndSorted = useMemo(() => {
-    let filtered = transactionsData.filter(tx => {
+    let filtered = transactions.filter(tx => {
       const matchesSearch =
         tx.description.toLowerCase().includes(search.toLowerCase()) ||
         tx.category.toLowerCase().includes(search.toLowerCase());
@@ -132,7 +67,7 @@ export function TransactionsTable() {
         return aVal < bVal ? 1 : -1;
       }
     });
-  }, [search, categoryFilter, typeFilter, sortField, sortOrder]);
+  }, [transactions, search, categoryFilter, typeFilter, sortField, sortOrder]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -143,7 +78,7 @@ export function TransactionsTable() {
     }
   };
 
-  const categories = ['all', ...new Set(transactionsData.map(tx => tx.category))];
+  const categories = ['all', ...new Set(transactions.map(tx => tx.category))];
 
   return (
     <div className="space-y-4">
