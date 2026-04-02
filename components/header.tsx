@@ -1,6 +1,7 @@
 'use client';
 
 import { useDashboard } from '@/app/dashboard-context';
+import { useFinanceStore } from '@/src/store/useFinanceStore';
 import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
@@ -8,11 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, ChevronDown } from 'lucide-react';
+import { Menu, ChevronDown, Shield, User } from 'lucide-react';
 import { useEffect } from 'react';
 
 export function Header() {
-  const { darkMode, setDarkMode, role, setRole, setSidebarOpen } = useDashboard();
+  const { darkMode, setDarkMode, setSidebarOpen } = useDashboard();
+  const role = useFinanceStore((s) => s.role);
+  const setRole = useFinanceStore((s) => s.setRole);
+  const roleLabel = role === 'admin' ? 'Admin' : 'Viewer';
 
   useEffect(() => {
     const root = document.documentElement;
@@ -48,19 +52,24 @@ export function Header() {
             />
           </div>
 
-          {/* Role Dropdown */}
+          {/* Role Dropdown (Zustand — persisted) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted">
-                <span className="text-sm font-medium">View As: {role}</span>
+              <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-muted">
+                {role === 'admin' ? (
+                  <Shield className="h-4 w-4 text-primary" />
+                ) : (
+                  <User className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium">View As: {roleLabel}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setRole('Admin')}>
+              <DropdownMenuItem onClick={() => setRole('admin')}>
                 Admin
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRole('Viewer')}>
+              <DropdownMenuItem onClick={() => setRole('viewer')}>
                 Viewer
               </DropdownMenuItem>
             </DropdownMenuContent>

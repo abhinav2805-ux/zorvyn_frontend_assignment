@@ -1,9 +1,4 @@
-Phase 5: RBAC & CRUD Logic
-Role Toggle: Connect the v0 "View As" dropdown to update the role state in Zustand.
 
-Conditional Rendering: Wrap the "+ Add Transaction" button and the table's "Action" icons (Edit/Delete) in a condition so they only render if role === 'admin'.
-
-Add/Edit Modals: Build simple form modals. When submitted, they should call addTransaction or updateTransaction functions inside your Zustand store. (Because Zustand is reactive, adding a transaction will instantly update your charts and summary cards).
 
 Phase 6: Polish & Final Brownie Points
 Simulate API: Wrap your initial Zustand data load in a setTimeout function (e.g., 1000ms). While loading, render a simple spinner or skeleton loader.

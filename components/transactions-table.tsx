@@ -1,6 +1,5 @@
 'use client';
 
-import { useDashboard } from '@/app/dashboard-context';
 import { Input } from '@/components/ui/input';
 import { useFinanceStore } from '@/src/store/useFinanceStore';
 import {
@@ -22,12 +21,17 @@ import {
   ChevronDown,
   Download,
   Plus,
-  MoreHorizontal,
   ArrowUpRight,
   ArrowDownLeft,
   ArrowUpDown,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
+import {
+  TransactionModal,
+  type TransactionRecord,
+} from '@/components/transaction-modal';
 
 interface Transaction {
   id: string;
@@ -48,8 +52,11 @@ function escapeCsvField(value: string): string {
 }
 
 export function TransactionsTable() {
-  const { role } = useDashboard();
+  const role = useFinanceStore((state) => state.role);
+  const deleteTransaction = useFinanceStore((state) => state.deleteTransaction);
   const transactions = useFinanceStore((state) => state.transactions) as Transaction[];
+
+  const isAdmin = role === 'admin';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -58,6 +65,9 @@ export function TransactionsTable() {
     key: SortKey;
     direction: 'asc' | 'desc';
   }>({ key: 'date', direction: 'desc' });
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<TransactionRecord | null>(null);
 
   const filteredTransactions = useMemo(() => {
     let result = [...transactions];
@@ -94,17 +104,14 @@ export function TransactionsTable() {
     return result;
   }, [transactions, searchTerm, categoryFilter, typeFilter, sortConfig]);
 
-  const handleSort = useCallback(
-    (key: SortKey) => {
-      setSortConfig((prev) => {
-        if (prev.key === key && prev.direction === 'asc') {
-          return { key, direction: 'desc' };
-        }
-        return { key, direction: 'asc' };
-      });
-    },
-    []
-  );
+  const handleSort = useCallback((key: SortKey) => {
+    setSortConfig((prev) => {
+      if (prev.key === key && prev.direction === 'asc') {
+        return { key, direction: 'desc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  }, []);
 
   const handleExportCSV = useCallback(() => {
     if (filteredTransactions.length === 0) return;
@@ -133,6 +140,24 @@ export function TransactionsTable() {
     () => ['All', ...Array.from(new Set(transactions.map((tx) => tx.category))).sort()],
     [transactions]
   );
+
+  const openAdd = () => {
+    setEditingTx(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (tx: Transaction) => {
+    setEditingTx(tx);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Delete this transaction?')) {
+      deleteTransaction(id);
+    }
+  };
+
+  const emptyColSpan = isAdmin ? 6 : 5;
 
   return (
     <div className="space-y-4">
@@ -202,8 +227,8 @@ export function TransactionsTable() {
           Export CSV
         </Button>
 
-        {role === 'Admin' && (
-          <Button size="sm" className="gap-2">
+        {isAdmin && (
+          <Button size="sm" className="gap-2" onClick={openAdd}>
             <Plus className="h-4 w-4" />
             Add Transaction
           </Button>
@@ -246,14 +271,16 @@ export function TransactionsTable() {
                     )}
                   </span>
                 </TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                {isAdmin && (
+                  <TableHead className="text-right">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={emptyColSpan}
                     className="py-12 text-center text-muted-foreground"
                   >
                     No transactions found matching your filters.
@@ -297,32 +324,32 @@ export function TransactionsTable() {
                         maximumFractionDigits: 2,
                       })}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
+                    {isAdmin && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
                             type="button"
-                            className="rounded-lg p-2 hover:bg-muted"
-                            aria-label="Row actions"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-primary"
+                            aria-label="Edit transaction"
+                            onClick={() => openEdit(tx)}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {role === 'Admin' && (
-                            <>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
-                                Delete
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {role === 'Viewer' && (
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            aria-label="Delete transaction"
+                            onClick={() => handleDelete(tx.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -330,6 +357,12 @@ export function TransactionsTable() {
           </Table>
         </div>
       </div>
+
+      <TransactionModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        existingTx={editingTx}
+      />
     </div>
   );
 }
