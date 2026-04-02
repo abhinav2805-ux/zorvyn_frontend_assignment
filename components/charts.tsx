@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useFinanceStore } from '@/src/store/useFinanceStore';
 import { getCategoryData, getTrendData } from '@/src/utils/helpers';
 import {
@@ -23,7 +24,12 @@ export function BalanceChart() {
   const lineData = getTrendData(transactions);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="rounded-2xl border border-border bg-card p-6"
+    >
       <h3 className="text-lg font-semibold text-card-foreground">Cash Flow Trend</h3>
       <div className="mt-6">
         <ResponsiveContainer width="100%" height={300}>
@@ -62,7 +68,7 @@ export function BalanceChart() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -71,7 +77,12 @@ export function SpendingChart() {
   const pieData = getCategoryData(transactions);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      className="rounded-2xl border border-border bg-card p-6"
+    >
       <h3 className="text-lg font-semibold text-card-foreground">Spending Breakdown</h3>
       <div className="mt-6">
         <ResponsiveContainer width="100%" height={300}>
@@ -106,6 +117,6 @@ export function SpendingChart() {
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </motion.div>
   );
 }

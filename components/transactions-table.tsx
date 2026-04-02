@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { useFinanceStore } from '@/src/store/useFinanceStore';
 import {
@@ -287,10 +288,13 @@ export function TransactionsTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTransactions.map((tx) => (
-                  <TableRow
+                filteredTransactions.map((tx, index) => (
+                  <motion.tr
                     key={tx.id}
-                    className="border-b border-border hover:bg-muted/50"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="border-b border-border transition-colors hover:bg-muted/50"
                   >
                     <TableCell className="font-medium">
                       {new Date(tx.date).toLocaleDateString('en-US', {
@@ -350,7 +354,7 @@ export function TransactionsTable() {
                         </div>
                       </TableCell>
                     )}
-                  </TableRow>
+                  </motion.tr>
                 ))
               )}
             </TableBody>

@@ -1,8 +1,2 @@
 
-
-Phase 6: Polish & Final Brownie Points
-Simulate API: Wrap your initial Zustand data load in a setTimeout function (e.g., 1000ms). While loading, render a simple spinner or skeleton loader.
-
-Animations: Install framer-motion. Wrap your table rows and charts in <motion.div> tags to add subtle fade-in effects.
-
 Documentation: Write the README. Document how you used v0 for the boilerplate UI to prioritize architecture, state management, and data flow. Detail how to run the project.
